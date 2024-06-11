@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\Broadcast;
 |
 */
 
-Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id;
+// Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
+//     return (int) $user->id === (int) $id;
+// });
+
+
+Broadcast::channel('private-my-{chatId}', function ($user, $chatId) {
+    \Log::info('User subscribing to chat channel: ' . $chatId, ['user_id' => $user->id]);
+    return true; // or your authorization logic
 });

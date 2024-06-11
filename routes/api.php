@@ -30,7 +30,7 @@ Route::post('register', [\App\Http\Controllers\Api\RegisterController::class, 'r
 Route::get('noauth', [\App\Http\Controllers\Api\RegisterController::class, 'noauth'])->name('noauth');
  
 
-Route::any('login', [\App\Http\Controllers\Api\RegisterController::class, 'login'])->name('login');
+Route::any('login', [\App\Http\Controllers\Api\RegisterController::class, 'login'])->name('apilogin');
 Route::any('verify', [\App\Http\Controllers\Api\RegisterController::class, 'verify']);
 Route::post('password/email',  [\App\Http\Controllers\Api\ForgotPasswordController::class,'forget']);
 Route::any('password/reset', [\App\Http\Controllers\Api\CodeCheckController::class,'index']);
@@ -40,6 +40,12 @@ Route::get('term/conditions', [\App\Http\Controllers\Api\CMSController::class, '
 
 Route::group(['middleware' => ['api','auth:api'], 'prefix' => 'auth'], function () {
     
+    
+    Route::POST('send_message',[App\Http\Controllers\Api\MessageController::class,'sendMessage']);
+	Route::get('chat_list',[App\Http\Controllers\Api\MessageController::class,'chat_list']);
+	Route::get('message_list/{id}',[App\Http\Controllers\Api\MessageController::class,'message_list']);
+
+
     Route::post('review',[App\Http\Controllers\Api\UserController::class,'review']);
     Route::get('review',[App\Http\Controllers\Api\UserController::class,'review_list']);
     Route::post('support',[App\Http\Controllers\Api\UserController::class,'support']);
@@ -100,7 +106,7 @@ Route::group(['middleware' => ['api','auth:api'], 'prefix' => 'auth'], function 
     Route::get('product/{brand}', [\App\Http\Controllers\Api\ProductController::class, 'brand_product']); 
 	Route::resource('cart',App\Http\Controllers\Api\CartController::class);
 	
-	Route::resource('trophy',App\Http\Controllers\Api\TrophyController::class);
+	// Route::resource('trophy',App\Http\Controllers\Api\TrophyController::class);
     Route::post('set_goal', [\App\Http\Controllers\Api\GoalController::class, 'set_goal']); 
     Route::get('goal/list', [\App\Http\Controllers\Api\GoalController::class, 'list']); 
     Route::post('addcard', [\App\Http\Controllers\UserCardController::class, 'addcard']);
