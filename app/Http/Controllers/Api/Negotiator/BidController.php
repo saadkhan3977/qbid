@@ -13,6 +13,9 @@ use App\Models\QuoteHelp;
 use App\Models\Notification;
 use Auth;
 use Validator;
+use App\Models\Message;
+use App\Models\Conversation;
+use App\Events\MessageSent;
 
 class BidController extends BaseController
 {
@@ -301,7 +304,7 @@ class BidController extends BaseController
 
     public function hiring_list()
     {
-        // return Auth::user()->id;
+        //  return Auth::user()->id;
         try
         {
             $user = Quote::with('images','negotiator_info')->where('status','pending')->where('type','specific')->where('negotiator_id',Auth::user()->id)->paginate(10);
@@ -321,7 +324,64 @@ class BidController extends BaseController
             $quote = Quote::find($id);
             $quote->status = $request->status;
             $quote->save();
+            $user = [
+                '_id' => Auth::user()->id,
+                'name' => Auth::user()->first_name,
+                'avatar' => Auth::user()->photo,
+            ];
+            // Create chate list for member or negotiator
+            $chat = Conversation::where('user_id',Auth::user()->id)->where('target_id',$quote->user_id)->first();
+            if($chat)
+            {
+                Message::create([
+                    'chat_id' => $chat->id,
+                    'user_id' => Auth::user()->id,
+                    'target_id' => $quote->user_id,
+                    'text' => 'Congrats! Your'.$quote->title.' has been accepted',
+                    'user' => $user,
+                ]);
+            }
+            else
+            {
+                $chat = Conversation::where('user_id',$quote->user_id)->where('target_id',Auth::user()->id)->first();
+                if($chat)
+                {
+                    Message::create([
+                        'chat_id' => $chat->id,
+                        'user_id' => Auth::user()->id,
+                        'target_id' => $quote->user_id,
+                        'text' => 'Congrats! Your '.$quote->title.' has been accepted',
+                        'user' => $user,
+                    ]);
+                }
+                else
+                {
+                    $chat = Conversation::create([
+                        // 'chat_id' => request()->chat_id,
+                        'user_id' => Auth::user()->id, //Auth::user()->id,
+                        'target_id' => $quote->user_id,
+                    ]);
+                    Message::create([
+                        'chat_id' => $chat->id,
+                        'user_id' => Auth::user()->id,
+                        'target_id' => $quote->user_id,
+                        'text' => 'Congrats! Your '.$quote->title.' has been accepted',
+                        'user' => $user,
+                    ]);
+                
+                    
+                }
+            }
 
+            $message = [
+                'chat_id' => $chat->id,
+                'target_id' => $quote->user_id,
+                'text' => 'Congrats! Your '.$quote->title.' has been accepted',
+                'createdAt' => date('Y-m-d H:i:s'),
+                'user' => $user,
+            ];
+            // Broadcast the event
+            broadcast(new MessageSent((object)$message))->toOthers();
 			return response()->json(['success'=>true,'message'=>'Hiring Updated Successfully']);
 
         }
@@ -381,6 +441,66 @@ class BidController extends BaseController
                 'negotiator_id' => Auth::user()->id,
                 'status' => $request->status
             ]);
+
+            $user = [
+                '_id' => Auth::user()->id,
+                'name' => Auth::user()->first_name,
+                'avatar' => Auth::user()->photo,
+            ];
+            // Create chate list for member or negotiator
+            $chat = Conversation::where('user_id',Auth::user()->id)->where('target_id',$bid->user_id)->first();
+            if($chat)
+            {
+                Message::create([
+                    'chat_id' => $chat->id,
+                    'user_id' => Auth::user()->id,
+                    'target_id' => $bid->user_id,
+                    'text' => 'Congrats! Your bid for the '.$quote->title.' has been accepted',
+                    'user' => $user,
+                ]);
+            }
+            else
+            {
+                $chat = Conversation::where('user_id',$bid->user_id)->where('target_id',Auth::user()->id)->first();
+                if($chat)
+                {
+                    Message::create([
+                        'chat_id' => $chat->id,
+                        'user_id' => Auth::user()->id,
+                        'target_id' => $bid->user_id,
+                        'text' => 'Congrats! Your bid for the '.$quote->title.' has been accepted',
+                        'user' => $user,
+                    ]);
+                }
+                else
+                {
+                    $chat = Conversation::create([
+                        // 'chat_id' => request()->chat_id,
+                        'user_id' => Auth::user()->id, //Auth::user()->id,
+                        'target_id' => $bid->user_id,
+                    ]);
+                    Message::create([
+                        'chat_id' => $chat->id,
+                        'user_id' => Auth::user()->id,
+                        'target_id' => $bid->user_id,
+                        'text' => 'Congrats! Your bid for the '.$quote->title.' has been accepted',
+                        'user' => $user,
+                    ]);
+                
+                    
+                }
+            }
+            
+            $message = [
+                'chat_id' => $chat->id,
+                'target_id' => $bid->user_id,
+                'text' => 'Congrats! Your bid for the '.$quote->title.' has been accepted',
+                'createdAt' => date('Y-m-d H:i:s'),
+                'user' => $user,
+            ];
+            // Broadcast the event
+            broadcast(new MessageSent((object)$message))->toOthers();
+
 
 			return response()->json(['success'=>true,'message'=>'Updated Successfully','bid_info'=>$bid]);
 		}

@@ -12,6 +12,9 @@ use App\Models\Bid;
 use Auth;
 use DB;
 use App\Models\Notification;
+use App\Models\Message;
+use App\Models\Conversation;
+use App\Events\MessageSent;
 
 class QuoteController extends Controller
 {
@@ -290,7 +293,13 @@ class QuoteController extends Controller
     public function bid_update(Request $request,$id)
     {
         try{
-			
+			// return date('Y-m-d H:i:s');
+            $user = [
+                '_id' => Auth::user()->id,
+                'name' => Auth::user()->first_name,
+                'avatar' => Auth::user()->photo,
+            ];
+            // return $user;
             $bid = Bid::find($id);
             $bids = Bid::where('quote_id',$bid->quote_id)->get();
 
@@ -322,6 +331,62 @@ class QuoteController extends Controller
                     'negotiator_id' => $bid->user_id,
                     'status' => 'onGoing'
                 ]);
+                
+
+                // Create chate list for member or negotiator
+                $chat = Conversation::where('user_id',Auth::user()->id)->where('target_id',$bid->user_id)->first();
+                if($chat)
+                {
+                    Message::create([
+                        'chat_id' => $chat->id,
+                        'user_id' => Auth::user()->id,
+                        'target_id' => $bid->user_id,
+                        'text' => 'Congrats! Your bid for the '.$quote->title.' has been accepted',
+                        'user' => $user,
+                    ]);
+                }
+                else
+                {
+                    $chat = Conversation::where('user_id',$bid->user_id)->where('target_id',Auth::user()->id)->first();
+                    if($chat)
+                    {
+                        Message::create([
+                            'chat_id' => $chat->id,
+                            'user_id' => Auth::user()->id,
+                            'target_id' => $bid->user_id,
+                            'text' => 'Congrats! Your bid for the '.$quote->title.' has been accepted',
+                            'user' => $user,
+                        ]);
+                    }
+                    else
+                    {
+                        $chat = Conversation::create([
+                            // 'chat_id' => request()->chat_id,
+                            'user_id' => Auth::user()->id, //Auth::user()->id,
+                            'target_id' => $bid->user_id,
+                        ]);
+                        Message::create([
+                            'chat_id' => $chat->id,
+                            'user_id' => Auth::user()->id,
+                            'target_id' => $bid->user_id,
+                            'text' => 'Congrats! Your bid for the '.$quote->title.' has been accepted',
+                            'user' => $user,
+                        ]);
+                    
+                        
+                    }
+                }
+                
+                $message = [
+                    'chat_id' => $chat->id,
+                    'target_id' => $bid->user_id,
+                    'text' => 'Congrats! Your bid for the '.$quote->title.' has been accepted',
+                    'createdAt' => date('Y-m-d H:i:s'),
+                    'user' => $user,
+                ];
+                // Broadcast the event
+                broadcast(new MessageSent((object)$message))->toOthers();
+
                 return response()->json(['success'=>true,'message'=>'Updated Successfully','bid_info'=>$bid]);
             }
 		}
