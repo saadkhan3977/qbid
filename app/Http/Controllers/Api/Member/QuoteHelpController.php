@@ -21,7 +21,7 @@ class QuoteHelpController extends BaseController
     {
         try
         {
-            $user = QuoteHelp::with('bid','bid.user_info')->where(['user_id'=>Auth::user()->id])->orderBy('id','desc')->paginate(10);
+            $user = QuoteHelp::with('bid','bid.user_info','negotiator_info')->where(['user_id'=>Auth::user()->id])->orderBy('id','desc')->paginate(10);
 
 			return response()->json(['success'=>true,'message'=>'Quote List','quote_info'=>$user]);
 		}

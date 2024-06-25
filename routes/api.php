@@ -44,7 +44,7 @@ Route::group(['middleware' => ['api','auth:api'], 'prefix' => 'auth'], function 
     Route::POST('send_message',[App\Http\Controllers\Api\MessageController::class,'sendMessage']);
 	Route::get('chat_list',[App\Http\Controllers\Api\MessageController::class,'chat_list']);
 	Route::get('message_list/{id}',[App\Http\Controllers\Api\MessageController::class,'message_list']);
-
+    Route::get('message_read/{id}',[App\Http\Controllers\Api\MessageController::class,'message_read']);
 
     Route::post('review',[App\Http\Controllers\Api\UserController::class,'review']);
     Route::get('review',[App\Http\Controllers\Api\UserController::class,'review_list']);

@@ -18,4 +18,9 @@ class QuoteHelp extends Model
     {
         return $this->hasOne(User::class,'id','user_id');
     }
+
+    public function negotiator_info()
+    {
+        return $this->hasOne(User::class,'id','negotiator_id');
+    }
 }

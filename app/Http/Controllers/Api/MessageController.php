@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BaseController as BaseController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Events\MessageSent;
+use App\Events\MessageRead;
 use App\Models\Conversation;
 use App\Models\User;
 use App\Models\Message;
@@ -15,35 +16,127 @@ class MessageController extends BaseController
 {
     public function chat_list()
     {
-        // $data = Conversation::with('message','user_info')->where('user_id',Auth::user()->id)->orwhere('target_id',Auth::user()->id)->get();
+        // Get the authenticated user's ID
         $userId = Auth::user()->id;
-
+    
+        // Fetch conversations with necessary relationships and new message count
         $conversations = Conversation::with(['message', 'user_info', 'target_user_info'])
+            ->withCount(['new_message' => function ($query) use ($userId) {
+                $query->where('is_read', 0)
+                      ->when($query->where('target_id', $userId), function ($q) use ($userId) {
+                          $q->where('target_id', $userId);
+                      })
+                      ->orderBy('id', 'desc');
+            }])
             ->where('user_id', $userId)
             ->orWhere('target_id', $userId)
             ->get();
-
+    
+        // Transform the conversations into the desired response format
         $response = $conversations->map(function ($conversation) use ($userId) {
             // Determine if the authenticated user is the sender or the target
-            $otherUser = $conversation->user_id == $userId ? $conversation->target_user_info : $conversation->user_info;
+            $isSender = $conversation->user_id == $userId;
+            $otherUser = $isSender ? $conversation->target_user_info : $conversation->user_info;
+    
+            // Check if the authenticated user matches the target_id
+            // if ($conversation->target_id == $userId) {
+            //     // Mark messages sent to the target_id as read
+            //     $conversation->message->where('target_id', $userId)->update(['is_read' => 1]);
+            // }
+    
             return [
                 'id' => $conversation->id,
                 'user' => $otherUser ? $otherUser : null,
                 'message' => $conversation->message,
+                'new_message_count' => $conversation->new_message_count,
+                'is_sender' => $isSender, // Indicate if the logged-in user is the sender
             ];
         });
-
+    
+        // Return the response
         return $this->sendResponse($response, 'Chat Lists');
     }
     
     public function message_list(Request $request,$id)
     {
+        //  return Auth::user()->id;
         $data = Message::where('chat_id',$id)->get();
+        // foreach($data as $msg)
+        // {
+            
+        //     $msgg = Message::where('id',$msg->id)->where('target_id',Auth::user()->id)->first();
+        //     if($msgg)
+        //     {
+        //         $msgg['is_read']= 1;
+        //         $msgg->save();
+        //     }
+        //     // return $msg;
+            
+        // }
         return $this->sendResponse($data ,'Messages Lists');
+    }
+    
+    public function message_read(Request $request,$id)
+    {
+        //  return Auth::user()->id;
+        // $data = Message::where('chat_id',$id)->get();
+        // foreach($data as $msg)
+        // {
+            
+        //     $msgg = Message::where('id',$msg->id)->where('target_id',Auth::user()->id)->first();
+        //     if($msgg)
+        //     {
+        //         $msgg['is_read']= 1;
+        //         $msgg->save();
+        //     }
+        //     // return $msg;
+            
+        // }
+        // return $this->sendResponse($data ,'Messages Read Success');
+        $userId = Auth::id();
+        $messageId = $id;
+    
+        // $message = Message::where('id', $messageId)
+        //     ->where('target_id', $userId)
+        //     ->first();
+        $messages = Message::where('chat_id', $messageId)
+        ->where('target_id', $userId)
+        ->where('is_read', 0) // Only unread messages
+        ->get();
+    
+        // if ($message) {
+        //     $message->is_read = 1;
+        //     $message->save();
+    
+        //     // Broadcast the message read event
+        //     broadcast(new MessageRead($message))->toOthers();
+    
+        //     return response()->json(['status' => 'success', 'message' => 'Message marked as read']);
+        // }
+        
+        // if ($messages->isEmpty()) 
+        // {
+        //     return response()->json(['status' => 'error', 'message' => 'No messages to mark as read or not authorized'], 404);
+        // }
+    
+        // Mark each message as read and broadcast the event
+        if (!$messages->isEmpty()) 
+        {
+            foreach ($messages as $message) {
+                $message->is_read = 1;
+                $message->save();
+        
+                // Broadcast the message read event
+                broadcast(new MessageRead($message))->toOthers();
+            }
+        }
+    
+        return response()->json(['status' => 'success', 'message' => 'Messages marked as read']);
     }
     
     public function sendMessage(Request $request)
     {
+        // return Auth::user()->id;
         // dd($request->user['id']);
 
         $message = [

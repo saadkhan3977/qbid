@@ -477,7 +477,7 @@ class QuoteController extends Controller
     {
         try{
             
-            return $qhelp = QuoteHelp::find($request->quote_id);
+            $qhelp = QuoteHelp::find($request->quote_id);
 		  //  $service_preference = $qhelp->service_preference;
 		    $qhelp->delete();
 	    	return response()->json(['success'=>true,'message'=>'withdraw Successfully']);
