@@ -41,7 +41,17 @@ class RegisterController extends BaseController
         ]);      
         if($validator->fails())
         {
-		 return $this->sendError($validator->errors()->first());
+		    return $this->sendError($validator->errors()->first());
+        }
+        if($request->role == 'Business Qbidder')
+        {
+            $validator = Validator::make($request->all(), [
+                'company_name' => 'required',
+            ]);      
+            if($validator->fails())
+            {
+                return $this->sendError($validator->errors()->first());
+            }
         }
         $userp = User::where('phone', $request->phone)->where('role',$request->role)->first();
         if($userp)
